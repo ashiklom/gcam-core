@@ -137,8 +137,10 @@ module_aglu_LA100.FAO_downscale_ctry <- function(command, ...) {
     thr <- FAO_an_Stocks$units == "1000 Head"
     FAO_an_Stocks[thr, fhyc] <- FAO_an_Stocks[thr, fhyc] * 1000
     FAO_an_Stocks$units <- FAO_an_Dairy_Stocks$units <- NULL
+    # as necessary, expand the animal stocks data to 2012
+    if(!"2012" %in% names(FAO_an_Stocks)) FAO_an_Stocks$`2012` <- FAO_an_Stocks$`2011`
 
-    # Not all databases go to 2011. Extrapolate each dataset to 2011, repeating
+    # Not all databases go to 2012. Extrapolate each dataset to 2012, repeating
     # the data for 2009/10. Where missing 1961, substitute 1962
     list("FAO_ag_Exp_t_SUA" = FAO_ag_Exp_t_SUA,
          "FAO_ag_Feed_t_SUA" = FAO_ag_Feed_t_SUA,
@@ -165,6 +167,7 @@ module_aglu_LA100.FAO_downscale_ctry <- function(command, ...) {
         if(!"1961" %in% colnames(df)) df$`1961` <- df$`1962`
         if(!"2010" %in% colnames(df)) df$`2010` <- df$`2009`
         if(!"2011" %in% colnames(df)) df$`2011` <- df$`2009`
+        if(!"2012" %in% colnames(df)) df$`2011` <- df$`2009`
         df$element <- NULL
         df
       }) %>%
@@ -348,13 +351,11 @@ module_aglu_LA100.FAO_downscale_ctry <- function(command, ...) {
     L100.FAOlist[["L100.FAO_fallowland_kha"]] %>%
       add_title("FAO fallow land area by country, year") %>%
       add_units("kha") %>%
-      add_flags(FLAG_PROTECT_FLOAT) %>%
       add_precursors("aglu/FAO/FAO_fallowland_kha_RESOURCESTAT", "aglu/AGLU_ctry") ->
       L100.FAO_fallowland_kha
     L100.FAOlist[["L100.FAO_harv_CL_kha"]] %>%
       add_title("FAO harvested cropland (temporary crops) area by country, year") %>%
       add_units("kha") %>%
-      add_flags(FLAG_PROTECT_FLOAT) %>%
       add_precursors("aglu/FAO/FAO_harv_CL_kha_RESOURCESTAT", "aglu/AGLU_ctry") ->
       L100.FAO_harv_CL_kha
     L100.FAOlist[["L100.FAO_Fert_Cons_tN"]] %>%

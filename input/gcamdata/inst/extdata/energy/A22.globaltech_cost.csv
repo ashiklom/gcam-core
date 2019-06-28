@@ -1,6 +1,8 @@
 # File: A22.globaltech_cost.csv
 # Title: Primary energy transformation technologies default cost assumptions
 # Units: 1975$/GJ
+# Column types: ccccnnnnnc 
+# ----------
 supplysector,subsector,technology,minicam.non.energy.input,1971,2010,2100,improvement.max,improvement.rate,improvement.shadow.technology
 gas processing,natural gas,natural gas,non-energy,0.2,0.2,0.2,,,
 gas processing,biomass gasification,biomass gasification,non-energy,7.0300865,7.0300865,,0.7,0.03,
@@ -19,5 +21,5 @@ refining,biomass liquids,FT biofuels,non-energy,7.802307692,7.802307692,,0.7,0.0
 refining,biomass liquids,FT biofuels CCS level 1,non-energy,8.516923077,8.516923077,,0.6,0.05,FT biofuels
 refining,biomass liquids,FT biofuels CCS level 2,non-energy,8.97527027,8.97527027,,0.6,0.05,FT biofuels
 refining,biomass liquids,corn ethanol,non-energy,2.38,2.38,2.38,,,
-refining,biomass liquids,sugar cane ethanol,non-energy,0,0,0,,,
+refining,biomass liquids,sugar cane ethanol,non-energy,2,2,2,,,
 refining,biomass liquids,biodiesel,non-energy,1.88,1.88,1.88,,,

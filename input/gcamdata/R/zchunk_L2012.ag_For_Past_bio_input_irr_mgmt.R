@@ -27,6 +27,7 @@ module_aglu_L2012.ag_For_Past_bio_input_irr_mgmt <- function(command, ...) {
              "L123.ag_Prod_Mt_R_Past_Y_GLU",
              "L123.For_Prod_bm3_R_Y_GLU",
              "L132.ag_an_For_Prices",
+             "L1321.prP_R_C_75USDkg",
              "L161.ag_irrProd_Mt_R_C_Y_GLU",
              "L161.ag_rfdProd_Mt_R_C_Y_GLU",
              "L163.ag_irrBioYield_GJm2_R_GLU",
@@ -49,7 +50,7 @@ module_aglu_L2012.ag_For_Past_bio_input_irr_mgmt <- function(command, ...) {
       AgSupplySector <- AgSupplySubsector <- AgProductionTechnology <- share.weight.year <- subs.share.weight <-
       tech.share.weight <- logit.year.fillout <- logit.exponent <- calPrice <- calOutputValue <-
       market <- IRR_RFD <- Irr_Rfd <- MGMT <- level <- yield <- generic.yield <- yield_irr <-
-      yieldmult <- Yield_GJm2 <- NULL   # silence package check notes
+      yieldmult <- Yield_GJm2 <- reg_calPrice <- NULL   # silence package check notes
 
     all_data <- list(...)[[1]]
 
@@ -64,6 +65,7 @@ module_aglu_L2012.ag_For_Past_bio_input_irr_mgmt <- function(command, ...) {
     L123.ag_Prod_Mt_R_Past_Y_GLU <- get_data(all_data, "L123.ag_Prod_Mt_R_Past_Y_GLU")
     L123.For_Prod_bm3_R_Y_GLU <- get_data(all_data, "L123.For_Prod_bm3_R_Y_GLU")
     L132.ag_an_For_Prices <- get_data(all_data, "L132.ag_an_For_Prices")
+    L1321.prP_R_C_75USDkg <- get_data(all_data, "L1321.prP_R_C_75USDkg")
     L161.ag_irrProd_Mt_R_C_Y_GLU <- get_data(all_data, "L161.ag_irrProd_Mt_R_C_Y_GLU")
     L161.ag_rfdProd_Mt_R_C_Y_GLU <- get_data(all_data, "L161.ag_rfdProd_Mt_R_C_Y_GLU")
     L163.ag_irrBioYield_GJm2_R_GLU <- get_data(all_data, "L163.ag_irrBioYield_GJm2_R_GLU")
@@ -72,6 +74,11 @@ module_aglu_L2012.ag_For_Past_bio_input_irr_mgmt <- function(command, ...) {
     L181.YieldMult_R_bio_GLU_irr <- get_data(all_data, "L181.YieldMult_R_bio_GLU_irr")
 
     # L2012.AgSupplySector: Generic AgSupplySector characteristics (units, calprice, market, logit)
+    # Set up the regional price data to be joined in to the ag supplysector table
+    L2012.prP_R_C <- left_join_error_no_match(L1321.prP_R_C_75USDkg, GCAM_region_names,
+                                              by = "GCAM_region_ID") %>%
+      select(region, GCAM_commodity, reg_calPrice = value)
+
     A_AgSupplySector %>%
       # At the supplysector (market) level, all regions get all supplysectors
       write_to_all_regions(c(LEVEL2_DATA_NAMES[["AgSupplySector"]], LOGIT_TYPE_COLNAME),
@@ -79,7 +86,9 @@ module_aglu_L2012.ag_For_Past_bio_input_irr_mgmt <- function(command, ...) {
       select(-calPrice) %>%
       # Join calibration price data, there are missing value for biomass, use left_join instead
       left_join(L132.ag_an_For_Prices, by = c("AgSupplySector" = "GCAM_commodity")) %>%
+      left_join(L2012.prP_R_C, by = c("region", AgSupplySector = "GCAM_commodity")) %>%
       mutate(calPrice = replace(calPrice, AgSupplySector == "biomass", 1), # value irrelevant
+             calPrice = if_else(is.na(reg_calPrice), calPrice, reg_calPrice),
              # For regional commodities, specify market names with region names
              market = replace(market, market == "regional", region[market == "regional"])) %>%
       select(LEVEL2_DATA_NAMES[["AgSupplySector"]], LOGIT_TYPE_COLNAME) %>%
@@ -392,7 +401,8 @@ module_aglu_L2012.ag_For_Past_bio_input_irr_mgmt <- function(command, ...) {
       add_precursors("common/GCAM_region_names",
                      "water/basin_to_country_mapping",
                      "aglu/A_agSupplySector",
-                     "L132.ag_an_For_Prices") ->
+                     "L132.ag_an_For_Prices",
+                     "L1321.prP_R_C_75USDkg") ->
       L2012.AgSupplySector
 
    L2012.AgSupplySubsector %>%
@@ -466,8 +476,7 @@ module_aglu_L2012.ag_For_Past_bio_input_irr_mgmt <- function(command, ...) {
                      "L113.ag_bioYield_GJm2_R_GLU",
                      "L163.ag_irrBioYield_GJm2_R_GLU",
                      "L163.ag_rfdBioYield_GJm2_R_GLU",
-                     "L181.YieldMult_R_bio_GLU_irr") %>%
-      add_flags(FLAG_PROTECT_FLOAT) ->
+                     "L181.YieldMult_R_bio_GLU_irr") ->
       L2012.AgYield_bio_ref
 
     L201.AgYield_bio_grass %>%
@@ -477,8 +486,7 @@ module_aglu_L2012.ag_For_Past_bio_input_irr_mgmt <- function(command, ...) {
       add_legacy_name("L201.AgYield_bio_grass") %>%
       add_precursors("common/GCAM_region_names",
                      "water/basin_to_country_mapping",
-                     "L113.ag_bioYield_GJm2_R_GLU") %>%
-      add_flags(FLAG_PROTECT_FLOAT) ->
+                     "L113.ag_bioYield_GJm2_R_GLU") ->
       L201.AgYield_bio_grass
 
     L201.AgYield_bio_tree %>%
@@ -488,8 +496,7 @@ module_aglu_L2012.ag_For_Past_bio_input_irr_mgmt <- function(command, ...) {
       add_comments("If data is missing for a region/basin, use the minimum yield") %>%
       add_legacy_name("L201.AgYield_bio_tree") %>%
       same_precursors_as("L201.AgYield_bio_grass") %>%
-      same_precursors_as("L2012.AgSupplySubsector") %>%
-      add_flags(FLAG_PROTECT_FLOAT) ->
+      same_precursors_as("L2012.AgSupplySubsector") ->
       L201.AgYield_bio_tree
 
     return_data(L2012.AgSupplySector, L2012.AgSupplySubsector, L2012.AgProduction_ag_irr_mgmt, L2012.AgProduction_For, L2012.AgProduction_Past, L2012.AgHAtoCL_irr_mgmt, L2012.AgYield_bio_ref, L201.AgYield_bio_grass, L201.AgYield_bio_tree)
